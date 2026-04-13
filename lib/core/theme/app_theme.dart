@@ -10,15 +10,22 @@ class AppTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: _primaryColor,
       brightness: Brightness.light,
-      background: const Color(0xFFF7F6F9),
       surface: const Color(0xFFF7F6F9),
+      surfaceContainerHighest: const Color(0xFFE6E1E9),
+      outlineVariant: const Color(0xFFCAC4D0),
     ),
     textTheme: _textTheme,
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      systemOverlayStyle: SystemUiOverlayStyle.dark,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
     ),
     cardTheme: CardThemeData(
       color: Colors.white,
@@ -46,13 +53,21 @@ class AppTheme {
     colorScheme: ColorScheme.fromSeed(
       seedColor: _primaryColor,
       brightness: Brightness.dark,
+      surfaceContainerHighest: const Color(0xFF36343B),
+      outlineVariant: const Color(0xFF49454F),
     ),
     textTheme: _textTheme,
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Color(0xFF1C1B1F),
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
     ),
     cardTheme: CardThemeData(
       elevation: 0,

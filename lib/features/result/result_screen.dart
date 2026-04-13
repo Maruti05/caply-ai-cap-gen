@@ -81,7 +81,7 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   void _shareContent(String content) {
-    SharePlus.instance.share(ShareParams(text: content));
+    Share.share(content);
   }
 
   @override

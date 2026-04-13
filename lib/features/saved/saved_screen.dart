@@ -95,7 +95,7 @@ class _SavedScreenState extends State<SavedScreen> {
   }
 
   void _shareContent(String content) {
-    SharePlus.instance.share(ShareParams(text: content));
+    Share.share(content);
   }
 
   @override

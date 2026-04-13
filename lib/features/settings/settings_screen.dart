@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:in_app_review/in_app_review.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/providers/theme_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  static const _appLink =
+      'https://play.google.com/store/apps/details?id=com.vedica.labs.ind.app.caply';
 
   @override
   Widget build(BuildContext context) {
@@ -51,48 +57,106 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            // const SizedBox(height: 24),
-            // Text('About', style: textTheme.titleMedium),
-            // const SizedBox(height: 12),
-            // Container(
-            //   decoration: BoxDecoration(
-            //     color: colorScheme.surfaceContainerHighest,
-            //     borderRadius: BorderRadius.circular(24),
-            //   ),
-            //   child: Column(
-            //     children: [
-            //       ListTile(
-            //         leading: const Icon(Icons.share_outlined),
-            //         title: const Text('Share this application'),
-            //         onTap: () {
-            //           SharePlus.instance.share(
-            //             ShareParams(text: 'Check out caply app at https://example.com'),
-            //           );
-            //         },
-            //         shape: RoundedRectangleBorder(
-            //           borderRadius: BorderRadius.circular(16),
-            //         ),
-            //       ),
-            //       ListTile(
-            //         leading: const Icon(Icons.star_rate_outlined),
-            //         title: const Text('Rate this application'),
-            //         onTap: () async {
-            //           final InAppReview inAppReview = InAppReview.instance;
-            //           if (await inAppReview.isAvailable()) {
-            //             inAppReview.requestReview();
-            //           }
-            //         },
-            //         shape: RoundedRectangleBorder(
-            //           borderRadius: BorderRadius.circular(16),
-            //         ),
-            //       ),
-            //     ],
-            //   ),
-            // ),
+            const SizedBox(height: 32),
+            Text('Spread the Word', style: textTheme.titleMedium),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.share_outlined),
+                    title: const Text('Share this application'),
+                    onTap: () {
+                      Share.share(
+                        'Check out Caply! Generate amazing captions, bios, and quotes with AI: $_appLink',
+                      );
+                    },
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(24),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 56, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.star_rate_outlined),
+                    title: const Text('Rate app'),
+                    onTap: () async {
+                      final InAppReview inAppReview = InAppReview.instance;
+                      if (await inAppReview.isAvailable()) {
+                        inAppReview.requestReview();
+                      } else {
+                        // Fallback: open store link
+                        inAppReview.openStoreListing(
+                          appStoreId: 'com.vedica.labs.ind.app.caply',
+                        );
+                      }
+                    },
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(24),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text('App Info', style: textTheme.titleMedium),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  final version = snapshot.data?.version ?? '...';
+                  final buildNumber = snapshot.data?.buildNumber ?? '';
+                  final fullVersion = buildNumber.isNotEmpty
+                      ? '$version($buildNumber)'
+                      : version;
+
+                  return _buildInfoRow(
+                    'Version',
+                    fullVersion,
+                    colorScheme,
+                    textTheme,
+                  );
+                },
+              ),
+            ),
             const SizedBox(height: 24),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(
+    String label,
+    String value,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: textTheme.bodyLarge),
+        Text(
+          value,
+          style: textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.primary,
+          ),
+        ),
+      ],
     );
   }
 
