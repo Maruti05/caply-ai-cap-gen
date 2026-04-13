@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = caply
+PRODUCT_NAME = Caply
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.vedica.labs.caply
+PRODUCT_BUNDLE_IDENTIFIER = com.vedica.labs.ind.app.caply
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.vedica.labs. All rights reserved.

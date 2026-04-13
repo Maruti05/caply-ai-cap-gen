@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:in_app_review/in_app_review.dart';
 import '../../core/providers/theme_provider.dart';
 
 class SettingsScreen extends StatelessWidget {

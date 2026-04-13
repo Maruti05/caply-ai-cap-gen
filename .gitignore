@@ -45,3 +45,9 @@ app.*.map.json
 
 # Environment variables
 .env
+
+# Android signing
+/android/key.properties
+/android/app/*.jks
+/android/app/*.keystore
+/android/app/*.p12
