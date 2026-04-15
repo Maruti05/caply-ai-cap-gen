@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/theme_provider.dart';
+import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -88,12 +90,16 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () async {
                       final InAppReview inAppReview = InAppReview.instance;
                       if (await inAppReview.isAvailable()) {
-                        inAppReview.requestReview();
+                        await inAppReview.requestReview();
                       } else {
-                        // Fallback: open store link
-                        inAppReview.openStoreListing(
-                          appStoreId: 'com.vedica.labs.ind.app.caply',
-                        );
+                        // Fallback: open store link using url_launcher for better reliability
+                        final Uri storeUri = Uri.parse(_appLink);
+                        if (await canLaunchUrl(storeUri)) {
+                          await launchUrl(
+                            storeUri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
                       }
                     },
                     shape: const RoundedRectangleBorder(
@@ -103,6 +109,30 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text('Legal', style: textTheme.titleMedium),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: const Text('Privacy Policy'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PrivacyPolicyScreen(),
+                    ),
+                  );
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
               ),
             ),
             const SizedBox(height: 32),
