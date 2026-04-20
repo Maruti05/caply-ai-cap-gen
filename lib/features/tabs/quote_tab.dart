@@ -107,8 +107,9 @@ class _QuoteTabState extends State<QuoteTab> {
                         label: Text(cat['name']),
                         selected: isSelected,
                         onSelected: (selected) {
-                          if (selected)
+                          if (selected) {
                             setState(() => _selectedCategory = cat['name']);
+                          }
                         },
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
