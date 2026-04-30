@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
+import 'core/services/admob_service.dart';
 import 'features/navigation/main_screen.dart';
 
 Future<void> main() async {
@@ -28,6 +29,9 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final themeIndex = prefs.getInt('theme_mode');
   final initialThemeMode = themeIndex != null ? ThemeMode.values[themeIndex] : ThemeMode.system;
+
+  // Initialize AdMob service
+  await AdMobService().initializeAds();
 
   runApp(
     MultiProvider(

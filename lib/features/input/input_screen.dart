@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/utils/ai_service.dart';
-import '../loading/loading_screen.dart';
 import '../result/result_screen.dart';
 
 class InputScreen extends StatefulWidget {
@@ -24,6 +23,10 @@ class _InputScreenState extends State<InputScreen> {
   final AiService _aiService = AiService();
   late String _selectedStyle;
 
+  bool _isLoading = false;
+  bool _includeEmojis = true;
+  bool _includeHashtags = true;
+
   @override
   void initState() {
     super.initState();
@@ -38,26 +41,13 @@ class _InputScreenState extends State<InputScreen> {
     return ['Professional', 'Funny', 'Aesthetic', 'Witty', 'Casual'];
   }
 
-  bool _includeEmojis = true;
-  bool _includeHashtags = true;
-
   void _generateContent() async {
+    if (_isLoading) return;
+
     final prompt = _promptController.text.trim();
     if (prompt.isEmpty) return;
 
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoadingScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
+    setState(() => _isLoading = true);
 
     try {
       final results = await _aiService.generateContent(
@@ -70,7 +60,8 @@ class _InputScreenState extends State<InputScreen> {
       );
 
       if (!mounted) return;
-      Navigator.pushReplacement(
+
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) =>
@@ -79,38 +70,25 @@ class _InputScreenState extends State<InputScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context); // Pop loading screen
-      
-      final errorMessage = e.toString().contains('Exception: ') 
-          ? e.toString().replaceAll('Exception: ', '') 
-          : e.toString();
+
+      String errorMessage;
+      if (e is AppException) {
+        errorMessage = e.message;
+      } else {
+        errorMessage = 'Something went wrong. Please try again.';
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error_outline, color: colorScheme.onErrorContainer),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  errorMessage,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onErrorContainer,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: colorScheme.errorContainer,
+          content: Text(errorMessage),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 3),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -120,131 +98,86 @@ class _InputScreenState extends State<InputScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text('New ${widget.actionType}', style: textTheme.titleLarge),
-        centerTitle: false,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.actionType == 'Quotes' ? "What's the category?" : 'What is this about?',
-                style: textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _promptController,
-                maxLines: 5,
-                style: textTheme.bodyLarge,
-                decoration: InputDecoration(
-                  hintText: widget.actionType == 'Quotes'
-                      ? 'e.g. Success, Love, Motivation, Fitness...'
-                      : 'e.g. A photo of my cat sleeping on my laptop...',
-                  hintStyle: textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.actionType == 'Quotes'
+                      ? "What's the category?"
+                      : 'What is this about?',
+                  style: textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _promptController,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter your content...',
                   ),
                 ),
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-              Text('Tone & Style', style: textTheme.titleLarge),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: _styles.map((style) {
-                  final isSelected = _selectedStyle == style;
-                  return ChoiceChip(
-                    label: Text(style),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedStyle = style;
-                        });
-                      }
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    side: BorderSide.none,
-                    selectedColor: colorScheme.secondaryContainer,
-                    backgroundColor: colorScheme.surfaceContainerHighest,
-                    labelStyle: TextStyle(
-                      color: isSelected
-                          ? colorScheme.onSecondaryContainer
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                  );
-                }).toList(),
-              ),
+                Text('Tone & Style', style: textTheme.titleLarge),
+                const SizedBox(height: 16),
 
-              const SizedBox(height: 32),
-              Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Include Emojis', style: TextStyle(fontWeight: FontWeight.w500)),
-                      value: _includeEmojis,
-                      onChanged: (value) {
-                        setState(() {
-                          _includeEmojis = value;
-                        });
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: _styles.map((style) {
+                    final isSelected = _selectedStyle == style;
+                    return ChoiceChip(
+                      label: Text(style),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() => _selectedStyle = style);
                       },
-                      secondary: Icon(
-                        _includeEmojis ? Icons.emoji_emotions_outlined : Icons.block_outlined,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    const Divider(height: 1, indent: 56, endIndent: 16),
-                    SwitchListTile(
-                      title: const Text('Include Hashtags', style: TextStyle(fontWeight: FontWeight.w500)),
-                      value: _includeHashtags,
-                      onChanged: (value) {
-                        setState(() {
-                          _includeHashtags = value;
-                        });
-                      },
-                      secondary: Icon(
-                        _includeHashtags ? Icons.numbers : Icons.block_outlined,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
-              ),
 
-              const SizedBox(height: 48),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _generateContent,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Generate',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                const SizedBox(height: 32),
+
+                SwitchListTile(
+                  title: const Text('Include Emojis'),
+                  value: _includeEmojis,
+                  onChanged: (v) => setState(() => _includeEmojis = v),
+                ),
+
+                SwitchListTile(
+                  title: const Text('Include Hashtags'),
+                  value: _includeHashtags,
+                  onChanged: (v) => setState(() => _includeHashtags = v),
+                ),
+
+                const SizedBox(height: 40),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _generateContent,
+                    child: const Text('Generate'),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+        ],
       ),
     );
   }
