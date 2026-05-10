@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/admob_service.dart';
 
-/// Provider for managing AdMob state and lifecycle
-/// Handles loading, showing, and disposing of banner ads
 class AdMobProvider extends ChangeNotifier {
   final AdMobService _adMobService = AdMobService();
 
@@ -12,6 +10,8 @@ class AdMobProvider extends ChangeNotifier {
   bool _isAdLoading = false;
   String? _errorMessage;
 
+  bool _isDisposed = false;
+
   // Getters
   BannerAd? get bannerAd => _bannerAd;
   bool get isAdLoaded => _isAdLoaded;
@@ -19,95 +19,96 @@ class AdMobProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get shouldShowBanner => _isAdLoaded && _adMobService.shouldShowAds();
 
-  /// Initialize AdMob service
+  /// Initialize AdMob
   Future<void> initialize() async {
     try {
       await _adMobService.initializeAds();
     } catch (e) {
-      _errorMessage = 'Failed to initialize AdMob: $e';
+      _errorMessage = 'AdMob init failed';
+      _safeNotify();
       if (kDebugMode) {
-        print('[AdMobProvider] $_errorMessage');
+        print('[AdMobProvider] Init error: $e');
       }
     }
   }
 
-  /// Load a new banner ad
-  Future<void> loadBannerAd() async {
-    if (_isAdLoading || _isAdLoaded) {
-      return; // Already loading or loaded
-    }
+  /// Load Banner
+  void loadBannerAd() {
+    if (_isAdLoading || _isAdLoaded || _isDisposed) return;
 
     if (kDebugMode) {
-      print('[AdMobProvider] Starting to load banner ad...');
+      print('[AdMobProvider] Loading banner...');
     }
 
     _isAdLoading = true;
-    notifyListeners();
+    _errorMessage = null;
+    _safeNotify();
 
-    try {
-      // Dispose old ad if exists
-      if (_bannerAd != null) {
-        await _adMobService.disposeBannerAd(_bannerAd);
-      }
+    // Dispose old ad
+    _adMobService.disposeBannerAd(_bannerAd);
+    _bannerAd = null;
 
-      // Load new banner ad
-      _bannerAd = _adMobService.loadBannerAd(
-        onAdLoaded: _onAdLoaded,
-        onAdFailedToLoad: _onAdFailedToLoad,
-      );
-    } catch (e) {
-      _errorMessage = 'Error loading banner ad: $e';
-      _isAdLoading = false;
-      notifyListeners();
-      if (kDebugMode) {
-        print('[AdMobProvider] $_errorMessage');
-      }
-    }
+    _bannerAd = _adMobService.loadBannerAd(
+      onAdLoaded: _onAdLoaded,
+      onAdFailedToLoad: _onAdFailedToLoad,
+    );
   }
 
-  /// Callback when ad loads successfully
+  /// Success callback
   void _onAdLoaded(Ad ad) {
+    if (_isDisposed) return;
+
     if (kDebugMode) {
-      print('[AdMobProvider] Banner ad loaded successfully');
+      print('[AdMobProvider] Banner loaded');
     }
+
     _isAdLoaded = true;
     _isAdLoading = false;
     _errorMessage = null;
-    notifyListeners();
+    _safeNotify();
   }
 
-  /// Callback when ad fails to load
+  /// Failure callback
   void _onAdFailedToLoad(Ad ad, LoadAdError error) {
+    if (_isDisposed) return;
+
     if (kDebugMode) {
-      print('[AdMobProvider] Banner ad failed to load: ${error.message}');
-      print('[AdMobProvider] Error code: ${error.code}, domain: ${error.domain}');
+      print(
+          '[AdMobProvider] Failed: ${error.code} | ${error.message}');
     }
+
     _isAdLoaded = false;
     _isAdLoading = false;
-    _errorMessage = error.message;
-    notifyListeners();
+
+    /// Show generic error to user
+    _errorMessage = 'Ad unavailable. Please try again later.';
+    _safeNotify();
   }
 
-  /// Reload banner ad
-  Future<void> reloadBannerAd() async {
+  /// Manual reload (used for retry button)
+  void reloadBannerAd() {
+    if (_isDisposed) return;
+
     _isAdLoaded = false;
     _isAdLoading = false;
-    await loadBannerAd();
+    loadBannerAd();
   }
 
-  /// Dispose resources
+  /// Safe notify (prevents crash after dispose)
+  void _safeNotify() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
+  /// Dispose (must NOT be async)
   @override
-  Future<void> dispose() async {
-    try {
-      await _adMobService.disposeBannerAd(_bannerAd);
-      _bannerAd = null;
-      _isAdLoaded = false;
-      _isAdLoading = false;
-    } catch (e) {
-      if (kDebugMode) {
-        print('[AdMobProvider] Error disposing ads: $e');
-      }
-    }
+  void dispose() {
+    _isDisposed = true;
+
+    _adMobService.disposeBannerAd(_bannerAd);
+    _bannerAd = null;
+
     super.dispose();
   }
 }

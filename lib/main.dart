@@ -1,3 +1,4 @@
+import 'package:caply/core/services/consent_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/services/admob_service.dart';
 import 'features/navigation/main_screen.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +31,8 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final themeIndex = prefs.getInt('theme_mode');
   final initialThemeMode = themeIndex != null ? ThemeMode.values[themeIndex] : ThemeMode.system;
-
+  //  Request consent
+  await ConsentManager.requestConsent();
   // Initialize AdMob service
   await AdMobService().initializeAds();
 

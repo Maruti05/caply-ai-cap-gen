@@ -32,7 +32,6 @@ class _QuoteTabState extends State<QuoteTab> {
       children: [
         // AdMob Banner at the top
         const AdBannerWidget(
-          height: 60,
           padding: EdgeInsets.symmetric(vertical: 8),
           showDivider: true,
         ),

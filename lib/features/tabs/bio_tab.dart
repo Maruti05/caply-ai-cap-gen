@@ -31,7 +31,6 @@ class _BioTabState extends State<BioTab> {
       children: [
         // AdMob Banner at the top
         const AdBannerWidget(
-          height: 60,
           padding: EdgeInsets.symmetric(vertical: 8),
           showDivider: true,
         ),

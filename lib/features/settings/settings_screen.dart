@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/theme_provider.dart';
 import 'privacy_policy_screen.dart';
 
@@ -88,18 +87,12 @@ class SettingsScreen extends StatelessWidget {
                     leading: const Icon(Icons.star_rate_outlined),
                     title: const Text('Rate app'),
                     onTap: () async {
-                      final InAppReview inAppReview = InAppReview.instance;
+                      final inAppReview = InAppReview.instance;
+
                       if (await inAppReview.isAvailable()) {
                         await inAppReview.requestReview();
                       } else {
-                        // Fallback: open store link using url_launcher for better reliability
-                        final Uri storeUri = Uri.parse(_appLink);
-                        if (await canLaunchUrl(storeUri)) {
-                          await launchUrl(
-                            storeUri,
-                            mode: LaunchMode.externalApplication,
-                          );
-                        }
+                        await inAppReview.openStoreListing();
                       }
                     },
                     shape: const RoundedRectangleBorder(
