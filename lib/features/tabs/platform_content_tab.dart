@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/widgets/ad_banner_widget.dart';
 import '../input/input_screen.dart';
 
-class QuoteTab extends HookWidget {
-  const QuoteTab({super.key});
+class PlatformContentTab extends HookWidget {
+  final String label;
+  final String title;
+  final String description;
+  final String actionType;
+  final IconData buttonIcon;
+  final String buttonText;
+  final Map<String, FaIconData> platforms;
+
+  const PlatformContentTab({
+    super.key,
+    required this.label,
+    required this.title,
+    required this.description,
+    required this.actionType,
+    required this.buttonIcon,
+    required this.buttonText,
+    required this.platforms,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final selectedCategory = useState('Motivation');
+    final selectedPlatform = useState('Instagram');
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-
-    final categories = useMemoized(
-      () => const [
-        ('Motivation', Icons.bolt_rounded),
-        ('Success', Icons.trending_up_rounded),
-        ('Love', Icons.favorite_rounded),
-        ('Funny', Icons.sentiment_very_satisfied_rounded),
-        ('Life', Icons.wb_sunny_rounded),
-        ('Fitness', Icons.fitness_center_rounded),
-        ('Deep', Icons.psychology_rounded),
-        ('Witty', Icons.auto_awesome_rounded),
-      ],
-    );
 
     return Column(
       children: [
@@ -46,34 +51,34 @@ class QuoteTab extends HookWidget {
                         _buildHeader(textTheme, colorScheme),
                         const SizedBox(height: 32),
                         Text(
-                          'Explore inspiring quotes for every mood.',
+                          description,
                           style: textTheme.bodyLarge?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 32),
-                        Text('Select Category', style: textTheme.titleMedium),
+                        Text('Select Platform', style: textTheme.titleMedium),
                         const SizedBox(height: 16),
                         Wrap(
                           spacing: 12,
                           runSpacing: 12,
-                          children: categories.map((cat) {
-                            final name = cat.$1;
-                            final icon = cat.$2;
-                            final isSelected = selectedCategory.value == name;
+                          children: platforms.entries.map((entry) {
+                            final platform = entry.key;
+                            final isSelected =
+                                selectedPlatform.value == platform;
                             return ChoiceChip(
-                              avatar: Icon(
-                                icon,
-                                size: 16,
+                              avatar: FaIcon(
+                                entry.value,
+                                size: 14,
                                 color: isSelected
                                     ? colorScheme.onSecondaryContainer
                                     : colorScheme.onSurfaceVariant,
                               ),
-                              label: Text(name),
+                              label: Text(platform),
                               selected: isSelected,
                               onSelected: (selected) {
                                 if (selected) {
-                                  selectedCategory.value = name;
+                                  selectedPlatform.value = platform;
                                 }
                               },
                               shape: RoundedRectangleBorder(
@@ -91,7 +96,7 @@ class QuoteTab extends HookWidget {
                         _buildButton(
                           context,
                           colorScheme,
-                          selectedCategory.value,
+                          selectedPlatform.value,
                         ),
                       ],
                     ),
@@ -115,7 +120,7 @@ class QuoteTab extends HookWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: colorScheme.secondary.withValues(alpha: 0.1),
+                color: colorScheme.primary.withValues(alpha: 0.1),
                 blurRadius: 10,
                 spreadRadius: 2,
               ),
@@ -134,13 +139,11 @@ class QuoteTab extends HookWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Daily',
-              style: textTheme.labelLarge?.copyWith(
-                color: colorScheme.secondary,
-              ),
+              label,
+              style: textTheme.labelLarge?.copyWith(color: colorScheme.primary),
             ),
             Text(
-              'Quotes',
+              title,
               style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -154,7 +157,7 @@ class QuoteTab extends HookWidget {
   Widget _buildButton(
     BuildContext context,
     ColorScheme colorScheme,
-    String category,
+    String platform,
   ) {
     return SizedBox(
       width: double.infinity,
@@ -164,11 +167,8 @@ class QuoteTab extends HookWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => InputScreen(
-                platform: 'General',
-                actionType: 'Quotes',
-                initialPrompt: category,
-              ),
+              builder: (_) =>
+                  InputScreen(platform: platform, actionType: actionType),
             ),
           );
         },
@@ -180,14 +180,14 @@ class QuoteTab extends HookWidget {
           ),
           elevation: 0,
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.auto_stories_rounded),
-            SizedBox(width: 12),
+            Icon(buttonIcon),
+            const SizedBox(width: 12),
             Text(
-              'Find Quotes',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              buttonText,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
         ),

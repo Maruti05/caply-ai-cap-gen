@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:in_app_review/in_app_review.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/theme_provider.dart';
 import 'privacy_policy_screen.dart';
 
@@ -86,15 +86,7 @@ class SettingsScreen extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.star_rate_outlined),
                     title: const Text('Rate app'),
-                    onTap: () async {
-                      final inAppReview = InAppReview.instance;
-
-                      if (await inAppReview.isAvailable()) {
-                        await inAppReview.requestReview();
-                      } else {
-                        await inAppReview.openStoreListing();
-                      }
-                    },
+                    onTap: () => _rateApp(context),
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.vertical(
                         bottom: Radius.circular(24),
@@ -160,6 +152,13 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static Future<void> _rateApp(BuildContext context) async {
+    final uri = Uri.parse(_appLink);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildInfoRow(

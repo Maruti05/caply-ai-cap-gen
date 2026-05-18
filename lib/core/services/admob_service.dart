@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/foundation.dart';
@@ -11,103 +10,60 @@ class AdMobService {
   static const String _androidBannerId =
       'ca-app-pub-6224944600468190/1842913945';
 
-  // ⚠️ Replace with real iOS ID before release
-  static const String _iosBannerId =
-      'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy';
+  static const String _iosBannerId = 'ca-app-pub-6224944600468190/1842913945';
+
+  static const String _androidTestBannerId =
+      'ca-app-pub-3940256099942544/6300978111';
+
+  static const String _iosTestBannerId =
+      'ca-app-pub-3940256099942544/2934735716';
 
   static String get bannerAdUnitId {
+    if (kDebugMode) {
+      if (Platform.isAndroid) return _androidTestBannerId;
+      if (Platform.isIOS) return _iosTestBannerId;
+    }
     if (Platform.isAndroid) return _androidBannerId;
     if (Platform.isIOS) return _iosBannerId;
     throw UnsupportedError('Unsupported platform');
   }
 
-  /// Initialize Ads
+  static const AdRequest _adRequest = AdRequest();
+
   Future<void> initializeAds() async {
     try {
       await MobileAds.instance.initialize();
-      if (kDebugMode) {
-        print('[AdMob] Initialized');
-      }
+      if (kDebugMode) debugPrint('[AdMob] SDK initialized');
     } catch (e) {
-      if (kDebugMode) {
-        print('[AdMob] Init error: $e');
-      }
+      if (kDebugMode) debugPrint('[AdMob] Init error: $e');
     }
   }
 
-  /// Load Banner with Retry + Debug
-  BannerAd loadBannerAd({
-    required Function(Ad ad) onAdLoaded,
-    required Function(Ad ad, LoadAdError error) onAdFailedToLoad,
-    int retryCount = 0,
+  BannerAd createBannerAd({
+    required AdSize size,
+    required BannerAdListener listener,
   }) {
-    final bannerAd = BannerAd(
+    return BannerAd(
       adUnitId: bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          if (kDebugMode) {
-            print('[AdMob] Banner loaded');
-          }
-          onAdLoaded(ad);
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-
-          if (kDebugMode) {
-            print(
-                '[AdMob] Failed: ${error.code} | ${error.message} | retry=$retryCount');
-          }
-
-          onAdFailedToLoad(ad, error);
-
-          /// 🔁 Retry logic (IMPORTANT)
-          if (retryCount < 3) {
-            Future.delayed(const Duration(seconds: 3), () {
-              loadBannerAd(
-                onAdLoaded: onAdLoaded,
-                onAdFailedToLoad: onAdFailedToLoad,
-                retryCount: retryCount + 1,
-              );
-            });
-          }
-        },
-        onAdImpression: (ad) {
-          if (kDebugMode) {
-            print('[AdMob] Impression recorded');
-          }
-        },
-      ),
-    );
-
-    bannerAd.load();
-    return bannerAd;
+      size: size,
+      request: _adRequest,
+      listener: listener,
+    )..load();
   }
 
-  /// Dispose banner safely
   void disposeBannerAd(BannerAd? ad) {
     try {
       ad?.dispose();
-      if (kDebugMode) {
-        print('[AdMob] Banner disposed');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('[AdMob] Dispose error: $e');
-      }
+    } catch (_) {}
+  }
+
+  static Future<AdSize?> getAdaptiveSize(double width) async {
+    try {
+      return await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width.toInt());
+    } catch (_) {
+      return null;
     }
   }
 
-  /// Check if ads should show
-  bool shouldShowAds() {
-    return true;
-  }
-
-  /// Adaptive banner (better than fixed size)
-  static Future<AdSize?> getAdaptiveSize(double width) async {
-    return await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
-      width.toInt(),
-    );
-  }
+  static const AdSize fallbackSize = AdSize.banner;
 }

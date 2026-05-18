@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -10,7 +9,7 @@ class AdBannerWidget extends StatefulWidget {
 
   const AdBannerWidget({
     super.key,
-    this.padding = const EdgeInsets.symmetric(vertical: 8),
+    this.padding = const EdgeInsets.symmetric(vertical: 4),
     this.showDivider = true,
   });
 
@@ -25,93 +24,98 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   bool _isLoaded = false;
   bool _isLoading = false;
   bool _isDisposed = false;
+  int _retryCount = 0;
+  static const int _maxRetries = 3;
 
   @override
   void initState() {
     super.initState();
-     WidgetsBinding.instance.addPostFrameCallback((_) {
-    _loadAd();
-  });
-    
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAd());
   }
 
   Future<void> _loadAd() async {
-    if (_isLoading || _isLoaded) return;
+    if (_isLoading || _isLoaded || _isDisposed) return;
 
     _isLoading = true;
     _safeSetState();
 
     try {
       final width = MediaQuery.of(context).size.width;
-      final size = await AdMobService.getAdaptiveSize(width);
+      final adaptiveSize = await AdMobService.getAdaptiveSize(width);
+      final size = adaptiveSize ?? AdMobService.fallbackSize;
 
-      if (size == null) {
-        if (kDebugMode) print('[AdBanner] Adaptive size null');
-        return;
-      }
-
-      _bannerAd = BannerAd(
-        adUnitId: AdMobService.bannerAdUnitId,
+      _bannerAd = _adMobService.createBannerAd(
         size: size,
-        request: const AdRequest(),
         listener: BannerAdListener(
-          onAdLoaded: (ad) {
+          onAdLoaded: (_) {
             if (_isDisposed) return;
-
-            if (kDebugMode) print('[AdBanner] Loaded');
-
             _isLoaded = true;
             _isLoading = false;
+            _retryCount = 0;
             _safeSetState();
+            if (kDebugMode) debugPrint('[AdBanner] Loaded');
           },
-          onAdFailedToLoad: (ad, error) {
-            ad.dispose();
-
+          onAdFailedToLoad: (_, error) {
             if (_isDisposed) return;
-
-            if (kDebugMode) {
-              print('[AdBanner] Failed: ${error.code} ${error.message}');
-            }
-
+            _bannerAd = null;
             _isLoaded = false;
             _isLoading = false;
+            if (kDebugMode) {
+              debugPrint('[AdBanner] Failed: ${error.code} ${error.message}');
+            }
             _safeSetState();
-
-            /// Retry (lightweight)
-            Future.delayed(const Duration(seconds: 5), _loadAd);
+            _scheduleRetry();
+          },
+          onAdImpression: (_) {
+            if (kDebugMode) debugPrint('[AdBanner] Impression');
           },
         ),
       );
-
-      await _bannerAd!.load();
     } catch (e) {
-      if (kDebugMode) print('[AdBanner] Error: $e');
-      _isLoading = false;
-      _safeSetState();
+      if (!_isDisposed) {
+        _isLoading = false;
+        _safeSetState();
+      }
+      if (kDebugMode) debugPrint('[AdBanner] Error: $e');
+      _scheduleRetry();
     }
   }
 
-  void _safeSetState() {
-    if (!_isDisposed && mounted) {
-      setState(() {});
+  void _scheduleRetry() {
+    if (_isDisposed || _retryCount >= _maxRetries) {
+      if (kDebugMode) debugPrint('[AdBanner] Max retries reached, giving up');
+      return;
     }
+    _retryCount++;
+    const delays = [5, 15, 45];
+    final seconds = delays[_retryCount - 1];
+    if (kDebugMode) {
+      debugPrint('[AdBanner] Retry $_retryCount/$_maxRetries in ${seconds}s');
+    }
+    Future.delayed(Duration(seconds: seconds), () {
+      if (!_isDisposed) _loadAd();
+    });
+  }
+
+  void _safeSetState() {
+    if (!_isDisposed && mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _isDisposed = true;
     _adMobService.disposeBannerAd(_bannerAd);
+    _bannerAd = null;
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    /// Hide completely if no ad
     if (!_isLoaded || _bannerAd == null) {
       return const SizedBox.shrink();
     }
+
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -119,7 +123,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
         if (widget.showDivider)
           Divider(
             height: 1,
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
         Padding(
           padding: widget.padding,
@@ -132,7 +136,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
         if (widget.showDivider)
           Divider(
             height: 1,
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
       ],
     );

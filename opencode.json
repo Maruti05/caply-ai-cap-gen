@@ -1,0 +1,22 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md"],
+  "agent": {
+    "flutter-memory": {
+      "description": "Manages project memory, tracks decisions, conventions, architectural patterns, and development status.",
+      "mode": "subagent",
+      "permission": { "read": "allow", "edit": "allow", "bash": "ask" }
+    }
+  },
+  "skills": {
+    "paths": [".opencode/skills"]
+  },
+  "compaction": {
+    "auto": true,
+    "tail_turns": 10
+  },
+  "tool_output": {
+    "max_lines": 150,
+    "max_bytes": 4096
+  }
+}
